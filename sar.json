@@ -1,0 +1,6 @@
+{"%usr": "CPU", "proc/s": "TASK", "pgpgin/s": "PAGING", "rtps": "I/O",
+ "frmpg/s": "MEMORY", "kbmemfree": "MEMORY_UTILIZATION",
+ "kbswpfree": "SWAP_SPACE_UTILIZATION", "dentunusd": "INODE_FILE",
+ "runq-sz": "QUEUE", "TTY": "TTY", "DEV":"BLOCK_DEVICE", "rxpck/s": "NETWORK",
+ "rxerr/s": "NETWORK_EDEV", "call/s": "NETWORK_NFS", "scall/s": "NETWORK_NFSD",
+ "totsck": "NETWORK_SOCK", "pswpin/s": "SWPING"}

@@ -26,7 +26,7 @@ def parser(logfile, tablemap):
     loglines = [line for line in logfile]
     #  get log file basic info from first line
     #      first line format: 'linux [2.6*] (name)\t[time]\t[arch]\t32 cpu'
-    values = [x for x in loglines if x != '']
+    values = [x for x in loglines[0].split('\t') if x != '']
     sar['sys'] = values[0].split(' ')[0]
     sar['kernel'] = values[0].split(' ')[1]
     sar['hostname'] = values[0].split(' ')[2][1:-1]  # del '()'

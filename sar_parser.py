@@ -4,9 +4,10 @@
 Analysis sar log file, auto generate all information with sar.json.
 The sar.json is a json file format {'field key word': 'table name'}.
 
-The idea: every item in sar log can regard a table and every table has a unique
-field, so a unique field is a mark of table.
-You maybe need edit the sar.json makesure the table you need can be get.
+The idea: every item in sar log can regard a table and every table has
+a unique field, so a unique field is a mark of table.
+You maybe need edit the sar.json makesure the table you need can be
+get.
 '''
 import sys
 import json
@@ -25,14 +26,17 @@ def parser(logfile, tablemap):
     #  store lines
     loglines = [line for line in logfile]
     #  get log file basic info from first line
-    #      first line format: 'linux [2.6*] (name)\t[time]\t[arch]\t32 cpu'
+    #    format like: 'linux [2.6*] (name)\t[time]\t[arch]\t32 cpu'
     values = [x for x in loglines[0].split('\t') if x != '']
-    sar['sys'] = values[0].split(' ')[0]
-    sar['kernel'] = values[0].split(' ')[1]
-    sar['hostname'] = values[0].split(' ')[2][1:-1]  # del '()'
-    sar['date'] = values[1]
-    sar['arch'] = values[2][1:-1]  # del '__'
-    sar['cpuinfo'] = values[3][1:-2]  # del '()\n'
+    try:
+        sar['sys'] = values[0].split(' ')[0]
+        sar['kernel'] = values[0].split(' ')[1]
+        sar['hostname'] = values[0].split(' ')[2][1:-1]  # del '()'
+        sar['date'] = values[1].replace('\n', ' ')  # del '\n'
+        sar['arch'] = values[2][1:-1]  # del '__'
+        sar['cpuinfo'] = values[3][1:-2]  # del '()\n'
+    except IndexError as e:  # some log file miss some field
+        print('Get basic information error:', end='')
     # get table info, format {'table':{name:{field:[values]}}}
     sar['table'] = {}
     #  get line blocks split by '\n\n', most blocks is a table
@@ -43,8 +47,10 @@ def parser(logfile, tablemap):
         #  get table name by key field word from table head
         tablehead = block.split('\n')[0]
         #  get table field from tablehead
-        fields = [f for f in tablehead.split(' ') if f != ''][2:]
+        fields = [f for f in tablehead.split(' ') if f != ''][1:]
         fields.insert(0, 'time')  # add field 'time'
+        if 'AM' in fields or 'PM' in fields:
+            fields.pop(1)
         for keyfield in tablemap.keys():
             if keyfield in fields:
                 tablename = tablemap[keyfield]
@@ -62,18 +68,21 @@ def parser(logfile, tablemap):
                 break
             # get values, format eg: '[12-time, [PM/AM], ...]'
             values = [f for f in line.split(' ') if f != '']
-            # 12 hours to 24 hours
-            temp = values[0].split(':')  # [h,m,s]
-            if values[1] == 'AM':
+            if values[1] == 'AM':  # 12 hours to 24 hours
+                temp = values[0].split(':')  # [h,m,s]
                 if '12' in values[0]:  # eg: '12:01:01 AM'
                     temp[0] = '00'
                     values[0] = ':'.join(temp)
-            else:
+                values.pop(1)  # delect 'AM'
+            elif values[1] == 'PM':
+                temp = values[0].split(':')  # [h,m,s]
                 if '12' not in values[0]:  # eg: '12:01:01 PM'
                     temp[0] = str(int(temp[0]) + 12)
                     values[0] = ':'.join(temp)
-            values[0] = sar['date'] + values[0]  # add date to time field
-            values.pop(1)  # delect 'AM' or 'PM'
+                values.pop(1)
+            elif values[0] == 'Average':  # no average
+                break
+            values[0] = sar['date'] + values[0]  # date time
             # add to sar
             for index, value in enumerate(values):
                 sar['table'][tablename][fields[index]].append(value)
